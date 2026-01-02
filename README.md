@@ -1,74 +1,49 @@
-<div align="right">
-  <a title="简体中文" href="README.md"><img src="https://img.shields.io/badge/-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-A31F34?style=for-the-badge" alt="简体中文" /></a>
-  <a title="English" href="README_EN.md"><img src="https://img.shields.io/badge/-English-545759?style=for-the-badge" alt="English"></a>
-</div>
+# MTProxy 一键安装管理脚本
 
-# mtproxy
+这是一个全新重构的 MTProxy 代理安装脚本，支持 Telegram 客户端连接。
+脚本经过现代化改造，采用 **Systemd** 进行进程管理（自动守护、开机自启），并内置了主流的 **mtg (Go版)**、**Python版** 以及 **官方C语言版** 核心供选择。
 
-这是一个一键安装 MTProxy 代理的自动化脚本, 用于 Telegram 客户端进行连接。脚本默认支持 Fake TLS 和 AdTag 配置。
+默认支持 **Fake TLS** 伪装技术，有效抵抗防火墙检测。
 
+## 主要特性
 
-在此基础上，提供了 Nginx 作为前端转发，MTProxy 作为后端代理的方式以实现安全的伪装。并且在 Nginx 转发层进行配置了 IP 白名单，只有通过白名单认证过的 IP 才可以进行访问。
-
-> 此功能提供了 Docker 镜像以便开箱即用。
-
-## 交流群组
-
-Telegram 群组：<https://t.me/EllerHK>
+- **多核心支持**：
+  - `mtg` (Go语言版)：**推荐**，性能强劲，轻量级，支持抗重放攻击。
+  - `python-mtprotoproxy`：兼容性好，无需编译。
+  - `Official MTProxy`：官方C语言版本 (仅限 x86 架构)。
+- **Systemd 管理**：原生支持开机自启、进程守护，无需手动配置 crontab 或 rc.local。
+- **极简交互**：一键生成密钥、配置端口和伪装域名。
+- **状态查看**：一键获取 tg:// 链接和运行状态。
 
 ## 安装方式
 
-提供了两种安装方式可供选择：
+### 方式一：使用脚本 (推荐)
 
-- 使用脚本 (建议 Debian/Ubuntu)
+支持 **CentOS / Debian / Ubuntu** 等主流 Linux 发行版。
 
-  选择该方式一般是你在宿主机中进行直接安装或者编译，会或多或少需要安装一些系统基础依赖库。
-
-- 使用 Docker (任意支持docker的系统均可)
-
-  **小白建议使用 Docker!** 不会对宿主机造成污染，如果你需要修改一些配置文件，需要你稍微学习一些基础 Docker 使用技术。
-
-### 使用脚本
-
-> 如果你反复遇到错误或者其他未知问题, 建议更换为 Debian 9+ 以上的系统或采用 Docker 方式运行。
-
-执行如下代码进行安装
+下载并运行脚本：
 
 ```bash
-rm -rf /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
-curl -fsSL -o mtproxy.sh https://github.com/QSDR2s1d/mtproxy/raw/master/mtproxy.sh
-bash mtproxy.sh
+# 下载脚本 (请确保你有 root 权限)
+wget -N --no-check-certificate https://raw.githubusercontent.com/QSDR2s1d/mtproxy/master/mtproxy.sh
+
+# 赋予执行权限
+chmod +x mtproxy.sh
+
+# 运行安装
+bash mtproxy.sh install
 ```
 
- ![mtproxy.sh](https://raw.githubusercontent.com/ellermister/mtproxy/master/preview.jpg)
+安装过程中，你可以选择：
+1. **代理核心**：推荐使用 `mtg` (Go版)。
+2. **运行端口**：默认 443。
+3. **伪装域名**：默认 `azure.microsoft.com` (用于 Fake TLS)。
 
-### 使用 Docker | 白名单 MTProxy Docker 镜像
+### 方式二：使用 Docker
 
-该镜像集成了 nginx、mtproxy+tls 实现对流量的伪装，并采用**白名单**模式来应对防火墙的检测。
+如果你不想污染宿主机环境，可以使用 Docker 镜像（支持 Nginx 前置伪装及白名单模式）。
 
-若使用该 Docker 镜像, 就不需要用脚本了，二者二选一，不要搞混了。
-
-**如果没有安装Docker**，一键安装方式如下：
-
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-```
-
-**创建白名单镜像：**
-
- ```bash
-docker run -d \
---name mtproxy \
---restart=always \
--e domain="cloudflare.com" \
--p 8080:80 \
--p 8443:443 \
-ellermister/mtproxy
- ```
-
-**镜像默认开启了 IP 段白名单**  
-如果你不需要可以配置 `ip_white_list="OFF"` 取消：
+**一键运行 (默认开启 IP 白名单)：**
 
 ```bash
 docker run -d \
@@ -82,100 +57,54 @@ docker run -d \
 ellermister/mtproxy
 ```
 
-`ip_white_list` 选项:
+更多 Docker 配置参数请参考：<https://hub.docker.com/r/ellermister/mtproxy>
 
-- **OFF** 关闭白名单
-- **IP** 开启 IP 白名单
-- **IPSEG** 开启 IP 段白名单
+## 脚本管理命令
 
-`secret`指定密钥：如果你想创建已知的密钥，格式为：32位十六进制字符。
+安装完成后，你可以使用以下命令管理服务：
 
-**在日志中查看链接的参数配置**：
-
-```bash
-docker logs -f mtproxy
-```
-
-连接端口记得修改为你映射后的外部端口，如上文例子中都是`8443`，在连接时修改端口。
-
-更多使用请参考： <https://hub.docker.com/r/ellermister/mtproxy>
-
-## 使用方式
-
-配置文件 `config`，如果你想手动修改密钥或者参数请注意格式。
-
-运行服务
-
+**启动服务**
 ```bash
 bash mtproxy.sh start
 ```
 
-调试运行
-
-```bash
-bash mtproxy.sh debug
-```
-
-停止服务
-
+**停止服务**
 ```bash
 bash mtproxy.sh stop
 ```
 
-重启服务
-
+**重启服务** (修改配置后需重启)
 ```bash
 bash mtproxy.sh restart
 ```
 
-重新安装/重新配置
-
+**查看状态 & 获取连接链接**
 ```bash
-bash mtproxy.sh reinstall
+bash mtproxy.sh info
 ```
 
-## 卸载安装
-
-因为是绿色版卸载极其简单，直接删除所在目录即可。
-
+**卸载脚本及服务**
 ```bash
-rm -rf /home/mtproxy
+bash mtproxy.sh uninstall
 ```
 
-## 开机启动
+## 常见问题
 
-> 该脚本没有配置为系统服务的方式，你可以将其添加到开机启动脚本中。
+**Q: 如何修改端口或密钥？**
+A: 修改 `/usr/local/mtproxy_manager/config` 文件，然后运行 `bash mtproxy.sh restart` 重启服务。
 
-开机启动脚本，如果你的 rc.local 文件不存在请检查开机自启服务。
+**Q: 为什么不需要配置 rc.local 了？**
+A: 本脚本自动创建了 `/etc/systemd/system/mtproxy.service` 服务文件，系统启动时会自动拉起代理，进程崩溃也会自动重启，无需人工干预。
 
-通过编辑文件`/etc/rc.local`将如下代码加入到开机自启脚本中：
+**Q: 提示 "Systemd 服务已创建" 但无法连接？**
+A: 请检查你的服务器防火墙（Firewall/UFW）以及云服务商的安全组（Security Group），确保你设置的端口（默认443）已放行 TCP/UDP 流量。
 
-```bash
-cd /home/mtproxy && bash mtproxy.sh start > /dev/null 2>&1 &
-```
+## 交流群组
 
-## 计划任务守护
-
-由于默认官方的 mtproxy 程序存在BUG，在 pid 大于 65535 时进程处理存在问题，进程容易坏死和异常退出。
-
-因此建议通过计划任务去守护进程 `crontab -e` ：
-
-每分钟检测进程并启动
-
-```bash
-* * * * * cd /home/mtproxy && bash mtproxy.sh start > /dev/null 2>&1 &
-```
-
-## MTProxy Admin Bot
-
-<https://t.me/MTProxybot>
-> Sorry, an error has occurred during your request. Please try again later.(Code xxxxxx)
-
-如果你在申请绑定代理推广时遇到了此类错误，官方没有给出明确的原因。根据网友反馈，此类问题多出现于账号注册不足与 2~3 年。  
-**建议使用 3 年以上的账号以及未被 banned 的账号。**
+Telegram 群组：<https://t.me/EllerHK>
 
 ## 引用项目
 
-- <https://github.com/TelegramMessenger/MTProxy>
 - <https://github.com/9seconds/mtg>
 - <https://github.com/alexbers/mtprotoproxy>
+- <https://github.com/TelegramMessenger/MTProxy>
