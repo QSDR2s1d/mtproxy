@@ -91,12 +91,11 @@ bash mtproxy.sh uninstall
 ## 常见问题
 
 **Q: 如何修改端口或密钥？**
+
 A: 修改 `/usr/local/mtproxy_manager/config` 文件，然后运行 `bash mtproxy.sh restart` 重启服务。
 
-**Q: 为什么不需要配置 rc.local 了？**
-A: 本脚本自动创建了 `/etc/systemd/system/mtproxy.service` 服务文件，系统启动时会自动拉起代理，进程崩溃也会自动重启，无需人工干预。
-
 **Q: 提示 "Systemd 服务已创建" 但无法连接？**
+
 A: 请检查你的服务器防火墙（Firewall/UFW）以及云服务商的安全组（Security Group），确保你设置的端口（默认443）已放行 TCP/UDP 流量。
 
 ## 交流群组
